@@ -14,8 +14,8 @@ e um medo enorme de tudo." Referência pronta: `kit/exemplos/3d_piranha/`.
   O humor vem do jeito de contar (exageros, comparações do dia a dia, ironia), nunca de
   inventar fato. Nada de piada ofensiva com grupos de pessoas.
 - Estrutura (55–70 s): "Você é um(a) X!" + 1 frase cômica que contradiz a fama →
-  3 a 5 fatos surpreendentes, cada um com uma piada → resumo engraçado → CTA
-  "Segue pra descobrir o que você vai ser amanhã!".
+  3 a 5 fatos surpreendentes, cada um com uma piada → resumo engraçado → fechamento com frase
+  de impacto (sem pedir para seguir; ver regras_plataformas.md).
 - Voz: narrador pm_santa natural (sem efeitos). `CLIMA = "comedia"`.
 
 ## Visual 3D (three.js, renderizado no Chromium; ~0,6 s por quadro → ~20 min para 60 s)

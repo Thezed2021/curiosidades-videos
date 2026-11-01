@@ -1,5 +1,7 @@
 # Kit de vídeos — Curiosidades do Mundo
 
+> Antes de tudo leia `regras_plataformas.md` (legendas, hashtags, rótulos de IA, variedade).
+
 Usado pela tarefa diária. Tudo roda num ambiente Linux novo a cada execução.
 
 ## 1. Instalar a voz (≈1–3 min)
