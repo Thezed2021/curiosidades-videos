@@ -37,6 +37,13 @@ Veja `kit/exemplos/personagens_demo.py`. Vozes por fala: campo `voice` no SEG
 romantico, comedia, inspirador, drama. Muda só o estilo da trilha; a voz fica sempre natural
 (VOICE_FX = False no engine, decisão do canal). Vídeos de curiosidade usam neutro (padrão).
 
+### Pessoas reais (regra do canal)
+Nunca use foto de pessoa real (nem baixada da internet, nem por link) e nunca desenhe o rosto
+de uma pessoa real imitando a aparência dela. Para citar alguém real, use
+`ficha_pessoa(c, "Nome", "quem é", "1879–1955")` (de `story.py`) e ilustre o CONTEXTO:
+mapa, ano, objetos, lugares, invenção, linha do tempo. Personagens de ficção (`person`)
+nunca representam pessoas reais.
+
 ## 3. Publicar
 O mp4 vai para a branch `videos` (órfã, sobrescrita a cada dia com force-push, para o
 repositório não crescer). Link público usado no Metricool:

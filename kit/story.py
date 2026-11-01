@@ -278,3 +278,20 @@ def continua(c, start, txt="CONTINUA..."):
     c.rect(0, 0, W, H, BLACK, 0.55 * a)
     c.text(540, 860, txt, 110, YELLOW, a, scale=c.pop(start, .5))
     c.text(540, 1000, "SEGUE PRA NÃO PERDER O PRÓXIMO", 44, WHITE, c.fade_in(start + .4, .4))
+
+
+# ------------------------------------------------------------------ pessoas reais
+def ficha_pessoa(c, nome, quem, datas="", y=760, alpha=1.0, cor=YELLOW):
+    """Ficha para citar uma PESSOA REAL: silhueta genérica + nome + descrição + datas.
+    Nunca use foto real nem desenho que imite o rosto da pessoa."""
+    if alpha < 0.02:
+        return
+    k = ease_back(clamp(alpha))
+    c.rect(140, y - 300 * k, 940, y + 300 * k, (20, 24, 40), alpha, radius=40, outline=cor, width=6)
+    # silhueta neutra (não é retrato)
+    c.circle(540, y - 130, 80 * k, (70, 78, 100), alpha)
+    c.rect(430, y - 40, 650, y + 60, (70, 78, 100), alpha, radius=60)
+    c.text(540, y + 130, nome.upper(), 64, WHITE, alpha, maxw=740)
+    c.text(540, y + 200, quem, 40, cor, alpha, stroke=4, maxw=740)
+    if datas:
+        c.text(540, y + 255, datas, 36, (190, 195, 215), alpha, stroke=3)
