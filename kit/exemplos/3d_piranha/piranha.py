@@ -51,9 +51,11 @@ def cardapio(c):
         c.chip(x, y, lbl, 42, WHITE, BLACK, c.fade_in(0.6 + i * 0.6, .3), scale=c.pop(0.6 + i * 0.6, .4))
 
 def dentes(c):
-    c.chip(540, 330, "ENCAIXE DE SERRA", 50, YELLOW, BLACK, c.fade_in(0.5, .3), scale=c.pop(0.5, .4))
-    a = c.fade_in(c.mark(1) + 2.4, .3)
-    c.chip(540, 1300, "DENTES NOVOS!", 50, GREEN, BLACK, a, scale=c.pop(c.mark(1) + 2.4, .4))
+    c.chip(540, 330, "ENCAIXE DE SERRA", 50, YELLOW, BLACK, c.fade_in(0.5, .3) * (1 - c.fade_in(c.mark(1) + 0.6, .3)),
+           scale=c.pop(0.5, .4))
+    c.chip(540, 330, "TROCA DE UM LADO TODO", 50, RED, WHITE, c.fade_in(c.mark(1) + 0.6, .3), scale=c.pop(c.mark(1) + 0.6, .4))
+    a = c.fade_in(c.mark(1) + 2.6, .3)
+    c.chip(540, 1330, "DENTES NOVOS!", 50, GREEN, BLACK, a, scale=c.pop(c.mark(1) + 2.6, .4))
 
 def late(c):
     for k in range(3):

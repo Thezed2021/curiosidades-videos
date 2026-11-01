@@ -186,3 +186,111 @@ export function makeBlob(o = {}) {
 }
 
 // texto 3D simples não é usado: textos ficam na camada 2D do engine (legendas, chips).
+
+// ---------------------------------------------------------------- peixe "profissional" (perfil real)
+// Corpo achatado lateralmente (extrusão de um contorno de peixe com bisel), cores por vértice
+// (dorso escuro, flancos prateados, barriga colorida), mandíbula articulada, dentes em lâmina
+// seguindo a curva da boca, olhos dos dois lados, nadadeiras finas e cauda bifurcada.
+function _shape(pts) {
+  const s = new THREE.Shape(); s.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) {
+    const p = pts[i], q = pts[(i + 1) % pts.length];
+    s.quadraticCurveTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2);
+  }
+  return s;
+}
+function _extrude(pts, depth, bevel, segs = 6) {
+  const g = new THREE.ExtrudeGeometry(_shape(pts), { depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel * 0.8, bevelSegments: segs, curveSegments: 18 });
+  g.translate(0, 0, -depth / 2); g.computeVertexNormals(); return g;
+}
+function _paint(geo, fn) {
+  const p = geo.attributes.position, c = new Float32Array(p.count * 3), col = new THREE.Color();
+  for (let i = 0; i < p.count; i++) { fn(p.getX(i), p.getY(i), p.getZ(i), col); c[i * 3] = col.r; c[i * 3 + 1] = col.g; c[i * 3 + 2] = col.b; }
+  geo.setAttribute('color', new THREE.BufferAttribute(c, 3));
+}
+function _vmesh(geo) { const m = new THREE.Mesh(geo, mat('#ffffff', { vertexColors: true })); m.castShadow = m.receiveShadow = true; return m; }
+function _fin(pts, color, thick = 0.035) { return mesh(_extrude(pts, thick, 0.015, 2), color); }
+
+// makePiranha({ size:1, back:'#4d5b70', side:'#a3b0c2', belly:'#ff4526', fin:'#5d6b80', anal:'#ff5a2a' })
+// Corpo = esfera deformada pelo perfil do peixe: alto no meio, pedúnculo fino, cabeça rombuda com
+// focinho baixo, achatado dos lados. Mandíbula inferior saliente (prognata) com dentes em lâmina.
+export function makePiranha(o = {}) {
+  const s = o.size ?? 1, g = new THREE.Group(), inner = new THREE.Group(); g.add(inner); inner.scale.setScalar(s);
+  const back = new THREE.Color(o.back ?? '#4d5b70'), side = new THREE.Color(o.side ?? '#a8b4c6'), belly = new THREE.Color(o.belly ?? '#ff4526');
+  const X0 = -1.15, X1 = 1.12;
+  const prof = (u) => {           // u: 0 = cauda, 1 = focinho
+    const hh = 0.30 + 0.62 * Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.05)), 0.7);   // meia-altura
+    const yc = 0.06 * Math.sin(Math.PI * u) - 0.16 * Math.pow(Math.max(0, u - 0.6) / 0.4, 2); // focinho baixo
+    const hw = hh * (0.40 + 0.12 * u);                                                   // achatado
+    return { hh, yc, hw };
+  };
+  const geo = new THREE.SphereGeometry(1, 72, 48); geo.rotateZ(Math.PI / 2);          // polos em ±x
+  const P = geo.attributes.position;
+  for (let i = 0; i < P.count; i++) {
+    const x = P.getX(i), y = P.getY(i), z = P.getZ(i);
+    const u = (x + 1) / 2, X = X0 + (X1 - X0) * u, { hh, yc, hw } = prof(u);
+    const r = Math.sqrt(Math.max(0, 1 - x * x)), k = r > 1e-4 ? Math.pow(r, u > 0.75 ? 0.55 : 0.85) / r : 0;
+    P.setXYZ(i, X, yc + y * k * hh, z * k * hw);
+  }
+  geo.computeVertexNormals();
+  _paint(geo, (x, y, z, col) => {
+    const u = (x - X0) / (X1 - X0), { yc, hh } = prof(u), ry = (y - yc) / hh;
+    const red = clamp((-0.05 - ry) / 0.45) * clamp(u * 1.6);
+    const dark = clamp((ry - 0.25) / 0.6);
+    col.copy(side).lerp(back, dark).lerp(belly, red);
+    col.offsetHSL(0, 0, Math.sin(x * 26) * Math.sin(y * 30) * 0.018);
+  });
+  const body = _vmesh(geo); inner.add(body);
+  const surfZ = (X, Y) => { const u = (X - X0) / (X1 - X0), { hh, yc, hw } = prof(u), ry = (Y - yc) / hh; return hw * Math.sqrt(Math.max(0, 1 - ry * ry)) * Math.pow(Math.sqrt(Math.max(0, 1 - Math.pow(2 * u - 1, 2))), u > 0.75 ? 0.55 : 0.85); };
+
+  // boca: interior escuro + dentes superiores sob o focinho
+  const mouthY = -0.30;
+  const inside = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), mat('#3d0812')); inside.scale.set(0.20, 0.07, 0.17); inside.position.set(0.84, mouthY - 0.02, 0); inner.add(inside);
+  const blade = (h, w) => { const t = new THREE.ConeGeometry(w, h, 3); t.scale(1, 1, 0.5); return t; };
+  const tMat = mat('#fdfaf0');
+  const upper = new THREE.Group(); inner.add(upper);
+  const NU = o.teethN ?? 9;
+  for (let i = 0; i < NU; i++) {
+    const u = -1 + 2 * i / (NU - 1), ang = u * 1.15;
+    const t = new THREE.Mesh(blade(0.17, 0.05), tMat); t.rotation.x = Math.PI;
+    t.position.set(0.82 + 0.20 * Math.cos(ang), mouthY + 0.05, 0.18 * Math.sin(ang)); t.rotation.y = -ang; upper.add(t);
+  }
+  // mandíbula inferior saliente com dentes maiores, intercalados
+  const jaw = new THREE.Group(); jaw.position.set(0.70, mouthY - 0.02, 0); inner.add(jaw);
+  const jg = new THREE.SphereGeometry(1, 40, 24); jg.scale(0.40, 0.13, 0.22); jg.translate(0.22, -0.05, 0);
+  _paint(jg, (x, y, z, col) => col.copy(side).lerp(belly, clamp((0.03 - y) / 0.09) * 0.9));
+  jaw.add(_vmesh(jg));
+  const lower = new THREE.Group(); jaw.add(lower);
+  for (let i = 0; i < NU - 1; i++) {
+    const u = -1 + 2 * (i + 0.5) / (NU - 1), ang = u * 1.15;
+    const t = new THREE.Mesh(blade(0.19, 0.055), tMat);
+    t.position.set(0.22 + 0.25 * Math.cos(ang), 0.07, 0.18 * Math.sin(ang)); t.rotation.y = -ang; lower.add(t);
+  }
+  // olhos na superfície dos dois lados + sobrancelhas
+  const eyes = [], brows = [];
+  for (const sz of [1, -1]) {
+    const ex = 0.62, ey = 0.20, ez = surfZ(ex, ey);
+    const e = eye(0.15); e.position.set(ex, ey, sz * (ez + 0.04)); e.rotation.y = sz * 0.5; inner.add(e); eyes.push(e);
+    const b = brow(0.22); b.position.set(ex + 0.02, ey + 0.22, sz * (surfZ(ex, ey + 0.22) + 0.06)); b.rotation.y = sz * 0.5; inner.add(b); brows.push(b);
+  }
+  // nadadeiras (finas)
+  const finC = o.fin ?? '#5d6b80', analC = o.anal ?? '#ff5a2a';
+  inner.add(_fin([[0.20, 0.80], [0.0, 1.30], [-0.42, 1.12], [-0.55, 0.70]], finC));                 // dorsal
+  inner.add(_fin([[-0.78, 0.40], [-0.84, 0.66], [-0.98, 0.58], [-0.98, 0.34]], finC));              // adiposa
+  inner.add(_fin([[-0.20, -0.70], [-0.42, -1.10], [-0.92, -0.82], [-0.98, -0.30]], analC));          // anal
+  const pects = [];
+  for (const sz of [1, -1]) {
+    const p = new THREE.Group(); p.position.set(0.38, -0.38, sz * (surfZ(0.38, -0.38) + 0.01));
+    p.add(_fin([[0, 0], [-0.10, -0.28], [-0.36, -0.26], [-0.28, 0.02]], analC, 0.02)); p.rotation.x = sz * 0.5; inner.add(p); pects.push(p);
+  }
+  const tail = new THREE.Group(); tail.position.set(-1.12, 0.03, 0); inner.add(tail);
+  tail.add(_fin([[0.08, 0.10], [-0.32, 0.66], [-0.74, 0.80], [-0.54, 0.30], [-0.46, 0.0], [-0.54, -0.30], [-0.74, -0.80], [-0.32, -0.66], [0.08, -0.10]], finC, 0.04));
+  tail.add(_fin([[-0.30, 0.52], [-0.50, 0.60], [-0.44, 0.0], [-0.50, -0.60], [-0.30, -0.52], [-0.34, 0]], '#2b3240', 0.05));
+  g.userData = { body, tail, eyes, brows, jaw, s, pects, upper, lower };
+  g.swim = (t, speed = 1) => { tail.rotation.y = Math.sin(t * 9 * speed) * 0.45; pects.forEach((p, i) => p.rotation.y = Math.sin(t * 6 + i) * 0.4); g.rotation.z = Math.sin(t * 2) * 0.04; };
+  g.chomp = (k) => { jaw.rotation.z = -0.45 * Math.abs(Math.sin(k * Math.PI)); };
+  g.mood = (m) => { const a = { bravo: -0.45, medo: 0.45, feliz: 0.15 }[m] ?? 0; brows.forEach(b => { b.rotation.z = Math.PI / 2 + a; }); };
+  g.look = (x, y) => eyes.forEach(e => e.look(x, y));
+  g.blink = (k) => eyes.forEach(e => e.blink(k));
+  return g;
+}

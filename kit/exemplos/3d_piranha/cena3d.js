@@ -21,12 +21,12 @@ export async function setup({ THREE, L, scene, camera, renderer }) {
   scene.add(O.plants);
 
   // protagonista
-  O.hero = L.makeFish({ body: '#8f9db3', belly: '#ff4b2b', fin: '#6f7f99', teeth: true, size: 1 });
+  O.hero = L.makePiranha({ size: 1 });
   scene.add(O.hero);
   // cardume (amigas)
   O.school = [];
   for (let i = 0; i < 14; i++) {
-    const f = L.makeFish({ body: '#8796ad', belly: '#f0532f', fin: '#6a7a92', teeth: true, size: 0.55 });
+    const f = L.makePiranha({ size: 0.55 });
     f.userData.home = new THREE.Vector3((i % 5 - 2) * 1.4 + (Math.random() - .5) * .5, Math.floor(i / 5) * 1.1 - 1.0, -2 - (i % 3) * 1.2);
     f.userData.ph = Math.random() * 10; scene.add(f); O.school.push(f);
   }
@@ -77,8 +77,9 @@ function schoolAt(L, gt, spread = 1, cx = 0) {
 export function update({ THREE, L, scene, camera }, c) {
   const { t, d, gt } = c;
   hideAll(); O.bub.update(gt);
+  if (c.name !== 'dentes') [...O.hero.userData.upper.children, ...O.hero.userData.lower.children].forEach(tt => { if (tt.userData.y0 !== undefined) tt.position.y = tt.userData.y0; tt.visible = true; tt.scale.setScalar(1); });
   O.rays.children.forEach((r, i) => r.material.opacity = 0.05 + 0.03 * Math.sin(gt * 0.8 + i));
-  const H = O.hero; const e = H.userData.eyes[0];
+  const H = O.hero; const e = { blink: (k) => H.blink(k), look: (x, y) => H.look(x, y) };
   H.rotation.set(0, 0, 0); H.position.set(0, 0, 0); H.scale.setScalar(1);
   e.blink((gt % 3.3) < 0.1 ? 1 : 0); e.look(0.3, 0);
 
@@ -122,13 +123,20 @@ export function update({ THREE, L, scene, camera }, c) {
     camera.position.set(0, 0.4, 9.5); camera.lookAt(0, 0.4, 0);
   }
   else if (c.name === 'dentes') {
-    O.teeth.visible = true;
-    const drop = L.ease((t - c.mark(1) - 0.8) / 1.0), rise = L.ease((t - c.mark(1) - 2.2) / 1.0);
-    O.oldL.position.y = -6 * drop; O.oldL.rotation.z = 0.4 * drop;
-    O.newL.position.y = L.lerp(1.3, 0, rise); O.newL.visible = drop > 0.05;
-    O.newL.children.forEach(n => n.material.color.set(rise > 0.95 ? '#ffffff' : '#e8f4ff'));
-    O.teeth.rotation.y = Math.sin(gt * .5) * .25; O.teeth.position.set(0, 0.4, 0); O.teeth.scale.setScalar(0.42);
-    camera.position.set(0, 0.2, 7.5); camera.lookAt(0, 0.3, 0);
+    // close na boca: os dentes de um lado caem juntos e os novos sobem no lugar
+    H.visible = true; H.mood('bravo'); H.swim(gt, 0.3); H.chomp(0.32);
+    H.rotation.y = -1.45 + Math.sin(gt * .5) * .08; H.position.set(0, 0.2, 0); H.scale.setScalar(1.0);
+    const drop = L.ease((t - c.mark(1) - 0.8) / 0.9), rise = L.ease((t - c.mark(1) - 2.0) / 1.0);
+    const sideTeeth = [...H.userData.upper.children, ...H.userData.lower.children].filter(tt => tt.position.z > 0.01);
+    sideTeeth.forEach(tt => {
+      if (tt.userData.y0 === undefined) tt.userData.y0 = tt.position.y;
+      const dirDown = H.userData.upper.children.includes(tt) ? -1 : 1;
+      if (rise > 0) { tt.visible = true; tt.position.y = tt.userData.y0 + dirDown * -0.25 * (1 - rise); tt.scale.setScalar(Math.max(0.05, rise)); }
+      else { tt.visible = drop < 0.98; tt.position.y = tt.userData.y0 - 1.6 * drop; tt.scale.setScalar(1); }
+    });
+    H.updateMatrixWorld(true);
+    const m = H.userData.jaw.getWorldPosition(new THREE.Vector3());
+    camera.position.set(m.x + 0.5, m.y + 0.45, m.z + 4.3); camera.lookAt(m.x, m.y + 0.25, m.z);
   }
   else if (c.name === 'late') {
     H.visible = true; H.mood('bravo'); H.swim(gt, 1);
