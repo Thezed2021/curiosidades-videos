@@ -31,7 +31,7 @@ SEGS = [
          say="Sério! Músculos vibram sua bexiga natatória, e sai um som parecido com latido."),
     dict(scene="final", cap="Resumindo: você é um peixinho medroso com uma dentadura incrível.",
          say="Resumindo: você é um peixinho medroso, com uma dentadura incrível."),
-    dict(scene="final", cap="Segue pra descobrir o que você vai ser amanhã!", say="Segue pra descobrir o que você vai ser amanhã!"),
+    dict(scene="final", cap="Fama de monstro, alma de sardinha.", say="Fama de monstro, alma de sardinha."),
 ]
 
 # camadas 2D opcionais por cima do 3D (chips, rótulos). c.t, c.mark(i) funcionam igual.
@@ -64,7 +64,7 @@ def late(c):
                scale=c.pop(st, .3))
 
 def final(c):
-    c.chip(540, 1320, "SEGUE PRA MAIS!", 56, YELLOW, BLACK, c.fade_in(c.mark(1), .3), scale=c.pop(c.mark(1), .5))
+    c.chip(540, 1320, "MEDROSA, MAS AFIADA", 50, YELLOW, BLACK, c.fade_in(c.mark(1), .3), scale=c.pop(c.mark(1), .5))
 
 if __name__ == "__main__":
     run(SEGS, globals(), out=os.environ.get("OUT", "piranha.mp4"))

@@ -32,7 +32,7 @@ SEGS = [
     dict(scene="maquiagem", cap="E fica mais colorido na época de conquistar parceiros.",
          say="E fica mais colorido na época de conquistar parceiros."),
     dict(scene="final", cap="Flamingo é, literalmente, o que ele come.", say="Flamingo é, literalmente, o que ele come."),
-    dict(scene="final", cap="Segue para mais curiosidades!", say="Segue para mais curiosidades!"),
+    dict(scene="final", cap="E o rosa mais forte é sinal de saúde.", say="E o rosa mais forte é sinal de saúde."),
 ]
 
 # ------------------------------------------------------------ desenhos
@@ -294,7 +294,7 @@ def final(c):
     flamingo(c, 600, 900, 1.1, PINK, c.fade_in(0, .3), bob=c.gt * 2)
     c.text(540, 300, "VOCÊ É", 90, WHITE, c.fade_in(0.1, .3))
     c.text(540, 420, "O QUE COME", 110, YELLOW, c.fade_in(0.3, .3), scale=c.pop(.3, .5))
-    c.chip(540, 1320, "SEGUE PARA MAIS!", 58, YELLOW, BLACK, c.fade_in(m1, .3), scale=c.pop(m1, .5))
+    c.chip(540, 1320, "COR = SAÚDE", 58, YELLOW, BLACK, c.fade_in(m1, .3), scale=c.pop(m1, .5))
 
 def capa(c):
     """Desenho da capa (sem textos): o título entra por cima, no alto."""
