@@ -43,4 +43,4 @@ e um medo enorme de tudo." Referência pronta: `kit/exemplos/3d_piranha/`.
   a pasta frames3d/ antes.
 
 ## Temas já feitos
-- 2026-11-01 (teste) — Você é uma piranha (medrosa, cardume, troca de dentes, late)
+- 2026-11-01 — Você é uma piranha (medrosa, cardume, troca de dentes, late) — publicado 01:31
