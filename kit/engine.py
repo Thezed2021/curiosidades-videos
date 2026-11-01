@@ -249,27 +249,67 @@ class Ctx:
         pass
 
 
+# ------------------------------------------------------------------ climas
+# Tratamento da voz + estilo de trilha por gênero. Use run(..., clima="sombrio").
+# narr = narrador (voz pm_santa); pers = falas de personagens (outras vozes).
+CLIMAS = {
+    "neutro":     dict(narr=dict(pitch=1.00, speed=1.00, af=""), pers=dict(af=""), music="padrao"),
+    "sombrio":    dict(narr=dict(pitch=0.86, speed=0.90,
+                                 af="lowpass=f=6000,aecho=0.8:0.6:70|140:0.22|0.12"),
+                       pers=dict(af="aecho=0.8:0.5:60:0.15"), music="sombrio"),
+    "suspense":   dict(narr=dict(pitch=0.92, speed=0.95, af="aecho=0.8:0.5:50|100:0.15|0.08"),
+                       pers=dict(af=""), music="tenso"),
+    "acao":       dict(narr=dict(pitch=0.95, speed=1.08, af=""), pers=dict(af=""), music="tenso"),
+    "romantico":  dict(narr=dict(pitch=1.00, speed=0.93, af="lowpass=f=7000,aecho=0.8:0.4:40:0.12"),
+                       pers=dict(af=""), music="romantico"),
+    "comedia":    dict(narr=dict(pitch=1.04, speed=1.07, af=""), pers=dict(af=""), music="comedia"),
+    "inspirador": dict(narr=dict(pitch=0.97, speed=0.95, af="aecho=0.8:0.4:40:0.10"),
+                       pers=dict(af=""), music="inspirador"),
+    "drama":      dict(narr=dict(pitch=0.94, speed=0.92, af="aecho=0.8:0.45:50:0.12"),
+                       pers=dict(af=""), music="drama"),
+}
+
+def _fx(path, pitch=1.0, af=""):
+    """Aplica pitch (sem mudar a duração) e filtros ffmpeg ao wav 24 kHz, no lugar."""
+    chain = []
+    if abs(pitch - 1.0) > 1e-3:
+        chain.append(f"asetrate={int(24000 * pitch)},aresample=24000,atempo={1 / pitch:.5f}")
+    if af:
+        chain.append(af)
+    if not chain:
+        return
+    tmp = path + ".fx.wav"
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", path, "-af", ",".join(chain),
+                    "-ar", "24000", "-ac", "1", tmp], check=True)
+    os.replace(tmp, path)
+
+
 # ------------------------------------------------------------------ voz
 def _tts(voice="pm_santa"):
     sys.path.insert(0, HERE)
     from neural_tts import TTS
     return TTS(voice=voice)
 
-def build_voice(segs, cache_dir="voz"):
-    """Gera um wav 24 kHz por segmento (com cache por texto). Retorna durações."""
+def build_voice(segs, cache_dir="voz", clima="neutro"):
+    """Gera um wav 24 kHz por segmento (com cache). Aplica o clima. Retorna durações."""
     os.makedirs(cache_dir, exist_ok=True)
+    cl = CLIMAS.get(clima, CLIMAS["neutro"])
     engines = {}; durs = []
     for i, s in enumerate(segs):
         voice = s.get("voice", "pm_santa")
-        key = f'{voice}|{s.get("speed", 1.0)}|{s["say"]}'
+        narr = voice == "pm_santa"
+        cfg = cl["narr"] if narr else dict(pitch=1.0, speed=1.0, **cl["pers"])
+        speed = s.get("speed", cfg.get("speed", 1.0))
+        key = f'{voice}|{speed}|{clima}|{s["say"]}'
         h = hashlib.md5(key.encode()).hexdigest()[:10]
         p = os.path.join(cache_dir, f"{i:02d}_{h}.wav")
         if not os.path.exists(p):
             if voice not in engines:
                 engines[voice] = _tts(voice)
             tts = engines[voice]
-            a = tts.say(s["say"], speed=s.get("speed", 1.0))
+            a = tts.say(s["say"], speed=speed)
             tts.save_wav(a, p)
+            _fx(p, cfg.get("pitch", 1.0), cfg.get("af", ""))
         with wave.open(p) as w:
             durs.append(w.getnframes() / w.getframerate())
         s["_wav"] = p
@@ -325,9 +365,9 @@ def caption_words(segs):
 
 # ------------------------------------------------------------------ render
 class Video:
-    def __init__(self, segs, ns):
-        self.segs, self.ns = segs, ns
-        durs = build_voice(segs)
+    def __init__(self, segs, ns, clima="neutro"):
+        self.segs, self.ns, self.clima = segs, ns, clima
+        durs = build_voice(segs, clima=clima)
         self.blocks, self.total = build_timeline(segs, durs)
         self.words, self.groups = caption_words(segs)
         self.nframes = int(math.ceil(self.total * FPS))
@@ -403,8 +443,10 @@ def _work(fi):
 
 
 # ------------------------------------------------------------------ áudio
-def _synth_music(total, sr=44100, seed=3):
-    """Trilha ambiente gerada por código: pad de acordes + pulso suave + brilho."""
+def _synth_music(total, sr=44100, seed=3, style="padrao"):
+    """Trilha gerada por código. style: padrao sombrio tenso romantico comedia inspirador drama."""
+    if style != "padrao":
+        return _MUSIC[style](total, sr, seed)
     rnd = np.random.default_rng(seed)
     n = int(total * sr); t = np.arange(n) / sr
     roots = [220.0, 174.61, 261.63, 196.0]  # A3 F3 C4 G3 (i-VI-III-VII)
@@ -434,6 +476,96 @@ def _synth_music(total, sr=44100, seed=3):
             out[s0:s0 + len(hat)] += 0.012 * hat
     return out
 
+# ---- estilos de trilha (tudo sintetizado, sem material de terceiros)
+def _env_ar(n, sr, a=0.01, r=0.3):
+    t = np.arange(n) / sr
+    return np.minimum(1, t / a) * np.exp(-t / r)
+
+def _pad(total, sr, roots, ratios, bar, vol, wob=0.2, attack=0.8):
+    n = int(total * sr); t = np.arange(n) / sr; out = np.zeros(n, np.float32)
+    for bi in range(int(total / bar) + 2):
+        s0 = int(bi * bar * sr); s1 = min(n, int((bi + 1) * bar * sr + 0.8 * sr))
+        if s0 >= n:
+            break
+        tt = t[s0:s1] - bi * bar
+        env = np.minimum(1, tt / attack) * np.exp(-np.maximum(0, tt - bar) * 4)
+        r = roots[bi % len(roots)]
+        rat = ratios[bi % len(ratios)] if isinstance(ratios[0], (list, tuple)) else ratios
+        seg = sum(np.sin(2 * np.pi * r * q * tt + wob * np.sin(2 * np.pi * 0.15 * tt)) for q in rat)
+        out[s0:s1] += (vol * env * seg).astype(np.float32)
+    return out
+
+def _hits(total, sr, period, fn, start=0.0):
+    n = int(total * sr); out = np.zeros(n, np.float32); i = 0
+    while True:
+        s0 = int((start + i * period) * sr)
+        if s0 >= n:
+            break
+        y = fn(i)
+        e = min(n, s0 + len(y)); out[s0:e] += y[:e - s0]; i += 1
+    return out
+
+def _m_sombrio(total, sr, seed):
+    rnd = np.random.default_rng(seed); n = int(total * sr); t = np.arange(n) / sr
+    drone = (np.sin(2 * np.pi * 55 * t) + 0.6 * np.sin(2 * np.pi * 82.4 * t + 0.5)
+             + 0.35 * np.sin(2 * np.pi * 58.3 * t)) * (0.6 + 0.4 * np.sin(2 * np.pi * 0.07 * t))
+    out = 0.07 * drone
+    out += _pad(total, sr, [110.0, 103.8, 98.0, 103.8], [1, 1.189, 1.414], 6.0, 0.022, wob=0.4, attack=2.0)
+    def beat(i):  # batida de coração (tum-tum)
+        L = int(0.7 * sr); tt = np.arange(L) / sr; y = np.zeros(L, np.float32)
+        for off, amp in ((0.0, 1.0), (0.22, 0.7)):
+            k = tt - off; m = k >= 0
+            y[m] += amp * np.sin(2 * np.pi * 48 * k[m]) * np.exp(-k[m] * 16)
+        return 0.16 * y
+    out += _hits(total, sr, 1.15, beat, 0.5)
+    def shimmer(i):
+        L = int(2.5 * sr); tt = np.arange(L) / sr
+        f = rnd.choice([1244.5, 1318.5, 1479.9])
+        return 0.012 * np.sin(2 * np.pi * f * tt) * np.minimum(1, tt / 1.0) * np.exp(-tt * 1.2)
+    out += _hits(total, sr, 7.3, shimmer, 3.0)
+    return out.astype(np.float32)
+
+def _m_tenso(total, sr, seed):
+    n = int(total * sr); t = np.arange(n) / sr
+    out = 0.05 * np.sin(2 * np.pi * 65.4 * t) * (0.5 + 0.5 * np.sign(np.sin(2 * np.pi * 4 * t)))
+    out += _pad(total, sr, [130.8, 123.5], [1, 1.189, 1.498], 4.0, 0.02, attack=1.5)
+    tick = lambda i: (0.05 if i % 2 == 0 else 0.03) * np.sin(2 * np.pi * 2200 * np.arange(int(0.03 * sr)) / sr) * _env_ar(int(0.03 * sr), sr, 0.001, 0.008)
+    out += _hits(total, sr, 0.5, tick)
+    return out.astype(np.float32)
+
+def _pluck(f, sr, L=0.6, vol=0.08):
+    n = int(L * sr); tt = np.arange(n) / sr
+    return vol * (np.sin(2 * np.pi * f * tt) + 0.3 * np.sin(4 * np.pi * f * tt)) * _env_ar(n, sr, 0.005, 0.25)
+
+def _m_romantico(total, sr, seed):
+    roots = [261.6, 220.0, 174.6, 196.0]
+    out = _pad(total, sr, roots, [[1, 1.26, 1.498], [1, 1.189, 1.498], [1, 1.26, 1.498], [1, 1.26, 1.498]], 4.0, 0.035)
+    arp = [1, 1.26, 1.498, 2, 1.498, 1.26]
+    out += _hits(total, sr, 0.5, lambda i: _pluck(roots[int(i * 0.5 / 4) % 4] * 2 * arp[i % 6], sr, 0.8, 0.035))
+    return out.astype(np.float32)
+
+def _m_comedia(total, sr, seed):
+    roots = [261.6, 349.2, 392.0, 261.6]; bass = [130.8, 174.6, 196.0, 130.8]
+    out = _hits(total, sr, 0.27, lambda i: _pluck(bass[int(i * 0.27 / 2.16) % 4] * (1 if i % 2 == 0 else 1.498), sr, 0.25, 0.07))
+    mel = [1, 1.26, 1.498, 1.26, 2, 1.498, 1.26, 1.122]
+    out += _hits(total, sr, 0.54, lambda i: _pluck(roots[int(i * 0.54 / 2.16) % 4] * 2 * mel[i % 8], sr, 0.3, 0.03), 0.27)
+    return out.astype(np.float32)
+
+def _m_inspirador(total, sr, seed):
+    roots = [261.6, 196.0, 220.0, 174.6]
+    out = _pad(total, sr, roots, [[1, 1.26, 1.498, 2], [1, 1.26, 1.498, 2], [1, 1.189, 1.498, 2], [1, 1.26, 1.498, 2]], 4.0, 0.03)
+    n = int(total * sr); swell = np.minimum(1, np.arange(n) / sr / max(1, total * 0.7))
+    out = out * (0.6 + 0.6 * swell)
+    out += _hits(total, sr, 0.5, lambda i: 0.06 * np.sin(2 * np.pi * 60 * np.arange(int(.2 * sr)) / sr) * _env_ar(int(.2 * sr), sr, .002, .08))
+    return out.astype(np.float32)
+
+def _m_drama(total, sr, seed):
+    roots = [220.0, 174.6, 130.8, 196.0]
+    return _pad(total, sr, roots, [[1, 1.189, 1.498], [1, 1.26, 1.498], [1, 1.26, 1.498], [1, 1.26, 1.498]], 5.0, 0.04, attack=1.5)
+
+_MUSIC = dict(sombrio=_m_sombrio, tenso=_m_tenso, romantico=_m_romantico, comedia=_m_comedia,
+              inspirador=_m_inspirador, drama=_m_drama)
+
 def _whoosh(sr=44100, L=0.5, seed=1):
     rnd = np.random.default_rng(seed)
     n = int(L * sr); x = rnd.normal(0, 1, n).astype(np.float32)
@@ -462,7 +594,7 @@ def build_audio(v, out_wav, sr=44100):
     with wave.open(proc) as w:
         voice = np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768
     voice = np.pad(voice, (0, max(0, n - len(voice))))[:n]
-    music = _synth_music(v.total, sr)[:n]
+    music = _synth_music(v.total, sr, style=CLIMAS.get(v.clima, CLIMAS["neutro"])["music"])[:n]
     music = np.pad(music, (0, n - len(music)))
     # ducking: envelope da voz suavizada
     env = np.abs(voice)
@@ -492,11 +624,14 @@ def contact_sheet(paths, out, cols=3):
         sheet.paste(im, ((i % cols) * 360, (i // cols) * 640))
     sheet.save(out)
 
-def run(segs, ns, out="video.mp4"):
+def run(segs, ns, out="video.mp4", clima=None):
+    """clima: neutro sombrio suspense acao romantico comedia inspirador drama
+    (ou defina CLIMA = "..." no script do vídeo)."""
     global _V
-    v = Video(segs, ns)
+    clima = clima or ns.get("CLIMA", "neutro")
+    v = Video(segs, ns, clima)
     _V = v
-    print(f"[engine] duração total {v.total:.1f}s, {v.nframes} quadros, {len(v.blocks)} cenas")
+    print(f"[engine] clima {clima}; duração total {v.total:.1f}s, {v.nframes} quadros, {len(v.blocks)} cenas")
     for b in v.blocks:
         print(f"   cena {b[0]:<18} {b[1]:6.2f} -> {b[2]:6.2f}  falas em {[round(m,2) for m in b[3]]}")
     stills = os.environ.get("STILLS")

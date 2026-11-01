@@ -5,6 +5,7 @@ sys.path.insert(0, os.environ.get("KIT", "/home/claude/curiosidades-videos/kit")
 from engine import *
 from story import *
 
+CLIMA = "sombrio"
 SERIE, EP, TOTAL = "Último Ônibus", 1, 8
 BRUNO = dict(skin=PELE[3], hair=(25, 20, 18), hair_style="curto", shirt=(70, 90, 140),
              pants=(35, 38, 50), shoes=(20, 20, 22), extras=["mochila"])

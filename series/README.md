@@ -15,6 +15,10 @@ Histórias de ficção em episódios, com um personagem principal por série.
 - Ficção 100% inventada: sem pessoas reais, marcas reais ou fatos reais distorcidos.
   Adequada às regras do YouTube/TikTok/Instagram: sem gore explícito, sem sexo, sem ódio,
   sem incentivar automutilação ou crimes. Tensão e emoção, sim; violência gráfica, não.
+- CLIMA da série (defina `CLIMA = "..."` no script; fica igual em todos os episódios):
+  sombrio (terror, zumbi, sobrenatural) · suspense (mistério, investigação) · acao (perseguição,
+  sobrevivência, golpe) · romantico (amor) · comedia · inspirador (vida dando certo, superação) ·
+  drama (perda, fracasso, família). Ele muda a voz do narrador (tom, velocidade, eco) e a trilha.
 - Narrador: voz pm_santa. Falas de personagens podem usar pm_alex (homem) ou pf_dora (mulher)
   com o campo `voice` do SEG. Mantenha sempre a MESMA voz para o mesmo personagem.
 - Visual: `kit/story.py` (person, cidade, quarto, escritorio, chuva, flash, ep_card, continua).
@@ -26,7 +30,8 @@ Histórias de ficção em episódios, com um personagem principal por série.
 
 ```
 # <Título da série>
-Gênero: ...           Total planejado: N episódios (≤10)
+Gênero: ...           Clima: sombrio|suspense|acao|romantico|comedia|inspirador|drama
+Total planejado: N episódios (≤10)
 Premissa: 2–3 frases.
 Personagens:
 - <Nome> (protagonista, voz pf_dora): personalidade...
