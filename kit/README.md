@@ -37,6 +37,14 @@ Veja `kit/exemplos/personagens_demo.py`. Vozes por fala: campo `voice` no SEG
 romantico, comedia, inspirador, drama. Muda só o estilo da trilha; a voz fica sempre natural
 (VOICE_FX = False no engine, decisão do canal). Vídeos de curiosidade usam neutro (padrão).
 
+### Título e capa (obrigatório em todo vídeo)
+No script defina `TITULO = "..."` (3–7 palavras, chamativo; é o título que aparece SOZINHO na
+tela no 1º segundo e na capa), opcional `SUBTITULO` (ex.: "Último Ônibus • Ep. 3") e uma função
+`capa(c)` que desenha o visual principal do tema SEM textos, concentrado em y 950–1650 (o título
+fica no alto). Planeje a 1ª cena para que seus textos entrem só depois de ~1,2 s.
+O render gera `<out>_capa.jpg` (e STILLS gera `stills/capa.jpg` — OLHE a capa também).
+Veja `exemplos/flamingo.py`.
+
 ### Pessoas reais (regra do canal)
 Nunca use foto de pessoa real (nem baixada da internet, nem por link) e nunca desenhe o rosto
 de uma pessoa real imitando a aparência dela. Para citar alguém real, use
@@ -45,9 +53,10 @@ mapa, ano, objetos, lugares, invenção, linha do tempo. Personagens de ficção
 nunca representam pessoas reais.
 
 ## 3. Publicar
-O mp4 vai para a branch `videos` (órfã, sobrescrita a cada dia com force-push, para o
+O mp4 e a capa (.jpg) vão para a branch `videos` (órfã, sobrescrita a cada dia com force-push, para o
 repositório não crescer). Link público usado no Metricool:
-`https://raw.githubusercontent.com/Thezed2021/curiosidades-videos/videos/<arquivo>.mp4`
+`https://raw.githubusercontent.com/Thezed2021/curiosidades-videos/videos/<arquivo>.mp4` (e `.jpg`
+da capa, usado em `videoThumbnailUrl` no Metricool)
 
 ## Pronúncia
 Palavra falada errado? Acrescente em `LEX` dentro de `neural_tts.py` (palavra → IPA).

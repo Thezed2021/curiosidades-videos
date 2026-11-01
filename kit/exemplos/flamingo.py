@@ -7,6 +7,8 @@ from engine import *
 PINK = (255, 105, 160); PALE = (245, 205, 220); GRAYF = (165, 165, 172)
 CARROT = (255, 135, 30); TOMATO = (235, 50, 45); LEAF = (60, 190, 90)
 
+TITULO = "Por que o flamingo é rosa?"   # capa + título no 1º segundo
+
 SEGS = [
     dict(scene="abertura", cap="Flamingo nasce cor-de-rosa?", say="Flamingo nasce cor-de-rosa?"),
     dict(scene="abertura", cap="Não! O filhote sai do ovo cinza.", say="Não! O filhote sai do ovo cinza."),
@@ -293,6 +295,13 @@ def final(c):
     c.text(540, 300, "VOCÊ É", 90, WHITE, c.fade_in(0.1, .3))
     c.text(540, 420, "O QUE COME", 110, YELLOW, c.fade_in(0.3, .3), scale=c.pop(.3, .5))
     c.chip(540, 1320, "SEGUE PARA MAIS!", 58, YELLOW, BLACK, c.fade_in(m1, .3), scale=c.pop(m1, .5))
+
+def capa(c):
+    """Desenho da capa (sem textos): o título entra por cima, no alto."""
+    c.bg(hue=320)
+    c.glow(560, 1250, 260, PINK, 0.5)
+    flamingo(c, 600, 1180, 1.25, PINK, 1, bob=0)
+    chick(c, 250, 1420, 0.9, GRAYF, 1, 0)
 
 if __name__ == "__main__":
     run(SEGS, globals(), out=os.environ.get("OUT", "flamingo.mp4"))

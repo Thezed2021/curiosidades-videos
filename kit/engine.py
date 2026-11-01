@@ -30,6 +30,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 W, H, FPS = 1080, 1920, 30
 LEAD, GAP, TAIL = 0.30, 0.28, 1.0
 CAP_Y = 1560
+TITLE_HOLD = 0.9  # o título de abertura (TITULO) fica sozinho na tela até aqui e some em 0.5 s
 TRANS = 0.40  # duração da transição em íris
 WHITE = (255, 255, 255); YELLOW = (255, 214, 10); BLACK = (0, 0, 0)
 CYAN = (64, 220, 255); ORANGE = (255, 140, 40); RED = (255, 70, 70)
@@ -419,7 +420,44 @@ class Video:
         c.text(W / 2, 96, BRAND, 34, (235, 240, 255), 0.85, stroke=4)
         c.rect(W / 2 - 60, 128, W / 2 + 60, 134, YELLOW, 0.85, radius=3)
 
-    def frame(self, fi):
+    def title_overlay(self, c, gt, alpha=None, cover=False):
+        """Título do vídeo em destaque (abertura e capa)."""
+        tit = self.ns.get("TITULO")
+        if not tit:
+            return
+        a = alpha if alpha is not None else 1.0 - ease((gt - TITLE_HOLD) / 0.5)
+        if a < 0.02:
+            return
+        import numpy as _np
+        y0, y1 = (250, 900) if cover else (560, 1260)
+        if not cover:  # abertura: cena inteira escurecida + desfocada atrás do título
+            bg = c.img.filter(ImageFilter.GaussianBlur(10 * a))
+            lay = _np.asarray(bg).astype(_np.float32) * (1 - 0.6 * a)
+        else:          # capa: degradê escuro só no alto, onde vai o título
+            lay = _np.asarray(c.img).astype(_np.float32)
+            yy = _np.arange(H, dtype=_np.float32)[:, None, None]
+            lay = lay * (1 - 0.7 * _np.clip((1050 - yy) / 900, 0, 1))
+        c.img = Image.fromarray(lay.clip(0, 255).astype(_np.uint8)); c.dr = ImageDraw.Draw(c.img)
+        words = tit.upper().split()
+        lines, cur = [], ""
+        for w in words:
+            if cur and font(118).getlength(cur + " " + w) > 940:
+                lines.append(cur); cur = w
+            else:
+                cur = (cur + " " + w).strip()
+        lines.append(cur)
+        lines = lines[:4]
+        size = 118 if len(lines) <= 3 else 100
+        ytop = (y0 + y1) / 2 - (len(lines) - 1) * size * 0.58
+        for i, ln in enumerate(lines):
+            col = YELLOW if i == len(lines) - 1 else WHITE
+            c.text(W / 2, ytop + i * size * 1.16, ln, size, col, a, stroke=12, maxw=980,
+                   scale=1.0 if cover else (1.0 + 0.04 * (1 - a)))
+        sub = self.ns.get("SUBTITULO")
+        if sub:
+            c.chip(W / 2, ytop + len(lines) * size * 1.16 + 30, sub.upper(), 44, YELLOW, BLACK, a)
+
+    def frame(self, fi, captions=True):
         gt = fi / FPS
         bi = self.block_at(gt)
         c = self.render_scene(bi, gt)
@@ -437,9 +475,29 @@ class Video:
                 c.dr.ellipse([W / 2 - r, H / 2 - r, W / 2 + r, H / 2 + r], outline=YELLOW, width=8)
         arr = np.asarray(c.img).astype(np.float32) * _vignette()
         c.img = Image.fromarray(arr.clip(0, 255).astype(np.uint8)); c.dr = ImageDraw.Draw(c.img)
+        if captions:
+            self.title_overlay(c, gt)
         self.brand(c)
-        self.captions(c, gt)
+        if captions and (not self.ns.get("TITULO") or gt > TITLE_HOLD + 0.3):
+            self.captions(c, gt)
         return c.img
+
+    def cover(self, path="capa.jpg"):
+        """Capa 1080x1920: cena mais forte (CAPA_T, s) + título grande."""
+        t = float(self.ns.get("CAPA_T", self.total * 0.4))
+        if "capa" in self.ns:  # desenho próprio da capa (sem textos), recomendado
+            c = Ctx(t, self.total, t, [0], 0)
+            self.ns["capa"](c)
+            arr = np.asarray(c.img).astype(np.float32) * _vignette()
+            c.img = Image.fromarray(arr.clip(0, 255).astype(np.uint8)); c.dr = ImageDraw.Draw(c.img)
+            self.brand(c)
+        else:
+            img = self.frame(min(self.nframes - 1, int(t * FPS)), captions=False)
+            img = img.filter(ImageFilter.GaussianBlur(4))
+            c = Ctx(0, 1, t, [0], 0); c.img = img; c.dr = ImageDraw.Draw(img)
+        self.title_overlay(c, 0, alpha=1.0, cover=True)
+        c.img.convert("RGB").save(path, quality=90)
+        return path
 
 _V = None
 def _work(fi):
@@ -647,6 +705,9 @@ def run(segs, ns, out="video.mp4", clima=None):
             p = f"stills/s_{float(s):06.2f}.png"
             v.frame(fi).save(p); paths.append(p)
         contact_sheet(paths, "stills/contact.png")
+        if ns.get("TITULO"):
+            v.cover("stills/capa.jpg")
+            print("[engine] capa em stills/capa.jpg")
         print("[engine] stills em stills/contact.png")
         return v
     build_audio(v, "audio.wav")
@@ -665,6 +726,10 @@ def run(segs, ns, out="video.mp4", clima=None):
     if ff.returncode != 0:
         raise SystemExit("ffmpeg falhou")
     os.replace(part, out)
+    if ns.get("TITULO"):
+        cp = os.path.splitext(out)[0] + "_capa.jpg"
+        v.cover(cp)
+        print(f"[engine] capa em {cp}")
     verify(out, v.total)
     return v
 

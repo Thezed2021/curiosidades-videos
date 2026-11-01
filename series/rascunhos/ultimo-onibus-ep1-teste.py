@@ -6,6 +6,8 @@ from engine import *
 from story import *
 
 CLIMA = "sombrio"
+TITULO = "Ele pegou o último ônibus"
+SUBTITULO = "Último Ônibus • Ep. 1"
 SERIE, EP, TOTAL = "Último Ônibus", 1, 8
 BRUNO = dict(skin=PELE[3], hair=(25, 20, 18), hair_style="curto", shirt=(70, 90, 140),
              pants=(35, 38, 50), shoes=(20, 20, 22), extras=["mochila"])
@@ -168,6 +170,13 @@ def final(c):
     onibus(c, -40, 1400, 0.62, a, farol=0.5 + 0.5 * math.sin(c.gt * 8))
     c.rect(0, 0, W, H, (0, 0, 0), 0.25 * a)
     continua(c, c.d - 1.6)
+
+def capa(c):
+    cidade(c, noite=True, seed=7); chuva(c, 70, 0.5)
+    poste(c, 120, 1500)
+    onibus(c, 260, 1450, 0.8, 1, farol=1)
+    person(c, 170, 1500, 0.55, BRUNO, "medo", "parado", 0.0)
+    c.glow(900, 1300, 140, (200, 40, 40), 0.4)
 
 if __name__ == "__main__":
     run(SEGS, globals(), out=os.environ.get("OUT", "ep.mp4"))
