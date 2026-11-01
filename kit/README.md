@@ -34,8 +34,8 @@ Veja `kit/exemplos/personagens_demo.py`. Vozes por fala: campo `voice` no SEG
 
 ### Clima (voz + trilha)
 `CLIMA = "sombrio"` no script (ou `run(..., clima=...)`): neutro, sombrio, suspense, acao,
-romantico, comedia, inspirador, drama. Muda tom/velocidade/eco do narrador, um leve ambiente
-nas falas dos personagens e o estilo da trilha. Vídeos de curiosidade usam neutro (padrão).
+romantico, comedia, inspirador, drama. Muda só o estilo da trilha; a voz fica sempre natural
+(VOICE_FX = False no engine, decisão do canal). Vídeos de curiosidade usam neutro (padrão).
 
 ## 3. Publicar
 O mp4 vai para a branch `videos` (órfã, sobrescrita a cada dia com force-push, para o

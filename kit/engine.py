@@ -250,7 +250,9 @@ class Ctx:
 
 
 # ------------------------------------------------------------------ climas
-# Tratamento da voz + estilo de trilha por gênero. Use run(..., clima="sombrio").
+# Estilo de trilha por gênero. Use run(..., clima="sombrio").
+# VOICE_FX = False: a voz fica SEMPRE natural (decisão do canal); o clima só muda a trilha.
+VOICE_FX = False
 # narr = narrador (voz pm_santa); pers = falas de personagens (outras vozes).
 CLIMAS = {
     "neutro":     dict(narr=dict(pitch=1.00, speed=1.00, af=""), pers=dict(af=""), music="padrao"),
@@ -299,8 +301,10 @@ def build_voice(segs, cache_dir="voz", clima="neutro"):
         voice = s.get("voice", "pm_santa")
         narr = voice == "pm_santa"
         cfg = cl["narr"] if narr else dict(pitch=1.0, speed=1.0, **cl["pers"])
+        if not VOICE_FX:
+            cfg = dict(pitch=1.0, speed=1.0, af="")
         speed = s.get("speed", cfg.get("speed", 1.0))
-        key = f'{voice}|{speed}|{clima}|{s["say"]}'
+        key = f'{voice}|{speed}|{clima if VOICE_FX else "-"}|{s["say"]}'
         h = hashlib.md5(key.encode()).hexdigest()[:10]
         p = os.path.join(cache_dir, f"{i:02d}_{h}.wav")
         if not os.path.exists(p):

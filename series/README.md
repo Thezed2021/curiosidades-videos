@@ -9,7 +9,7 @@ Histórias de ficção em episódios, com um personagem principal por série.
   certo, fracasso e recomeço, mistério, suspense, ficção científica, comédia, drama de família,
   sobrevivência, viagem no tempo, golpe/assalto, escola, esporte, sobrenatural leve...
   Evite repetir o gênero das 2 séries anteriores.
-- Cada episódio: 45–75 s, começa com "Anteriormente..." curto (1 frase, exceto no ep. 1),
+- Cada episódio: NO MÍNIMO 60 s (alvo 65–90 s), começa com "Anteriormente..." curto (1 frase, exceto no ep. 1),
   tem conflito, virada, e termina com GANCHO forte para o próximo + tela "CONTINUA...".
   O último episódio fecha a história (pode deixar uma pontinha) e anuncia "Nova série amanhã".
 - Ficção 100% inventada: sem pessoas reais, marcas reais ou fatos reais distorcidos.
@@ -18,7 +18,7 @@ Histórias de ficção em episódios, com um personagem principal por série.
 - CLIMA da série (defina `CLIMA = "..."` no script; fica igual em todos os episódios):
   sombrio (terror, zumbi, sobrenatural) · suspense (mistério, investigação) · acao (perseguição,
   sobrevivência, golpe) · romantico (amor) · comedia · inspirador (vida dando certo, superação) ·
-  drama (perda, fracasso, família). Ele muda a voz do narrador (tom, velocidade, eco) e a trilha.
+  drama (perda, fracasso, família). Ele muda SÓ a trilha: a voz fica sempre natural, sem efeitos.
 - Narrador: voz pm_santa. Falas de personagens podem usar pm_alex (homem) ou pf_dora (mulher)
   com o campo `voice` do SEG. Mantenha sempre a MESMA voz para o mesmo personagem.
 - Visual: `kit/story.py` (person, cidade, quarto, escritorio, chuva, flash, ep_card, continua).
