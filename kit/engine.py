@@ -739,6 +739,11 @@ def run(segs, ns, out="video.mp4", clima=None):
             v.render3d(fis, capa=bool(ns.get("TITULO")))
         else:
             v.render3d(None, capa=bool(ns.get("TITULO")))
+            falta = [fi for fi in range(v.nframes) if not os.path.exists(os.path.join(v.dir3d, f"{fi:05d}.jpg"))]
+            if falta:
+                print(f"[engine] 3D PARCIAL: faltam {len(falta)} de {v.nframes} quadros. Rode o mesmo comando de novo "
+                      f"(ele continua de onde parou).")
+                sys.exit(3)
     if stills:
         os.makedirs("stills", exist_ok=True)
         paths = []

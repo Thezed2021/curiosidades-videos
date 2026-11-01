@@ -31,6 +31,10 @@ e um medo enorme de tudo." Referência pronta: `kit/exemplos/3d_piranha/`.
   vertical. Empilhe as coisas na vertical; nada importante fora disso.
 - Defina também a cena `capa` no .js (personagem em pose forte, sem textos) e `TITULO`.
 - Sempre STILLS primeiro e OLHE (enquadramento, objetos fora do quadro, legibilidade).
+- Render em blocos (retomável): rode `RENDER3D_MAX_S=500 OUT=x.mp4 python3 x.py` em primeiro
+  plano repetidamente. Se sair com código 3 ("3D PARCIAL"), rode de novo: ele pula os quadros
+  prontos. Quando todos existem, ele monta o MP4. Se mudar a cena 3D depois do render, apague
+  a pasta frames3d/ antes.
 
 ## Temas já feitos
 - 2026-11-01 (teste) — Você é uma piranha (medrosa, cardume, troca de dentes, late)

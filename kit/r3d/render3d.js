@@ -55,18 +55,24 @@ const server = http.createServer((req, res) => {
   page.on('pageerror', e => { console.error('[3d] erro na cena:', e.message); process.exitCode = 2; });
   await page.goto(`http://127.0.0.1:${port}/`);
   await page.waitForFunction(() => window.__ready === true, null, { timeout: 60000 });
-  const frames = framesArg === 'all' ? [...Array(tl.nframes).keys()] : framesArg.split(',').filter(Boolean).map(Number);
-  const t0 = Date.now();
+  let frames = framesArg === 'all' ? [...Array(tl.nframes).keys()] : framesArg.split(',').filter(Boolean).map(Number);
+  const fname = (fi) => path.join(outDir, String(fi).padStart(5, '0') + '.jpg');
+  if (framesArg === 'all') frames = frames.filter(fi => !fs.existsSync(fname(fi)));  // retomável
+  const maxS = Number(process.env.RENDER3D_MAX_S || 0), t0 = Date.now();
+  console.log(`   3d: ${frames.length} quadros a renderizar` + (maxS ? ` (limite ${maxS}s nesta rodada)` : ''));
   for (let i = 0; i < frames.length; i++) {
     const fi = frames[i];
     await page.evaluate((fi) => window.renderFrame(fi), fi);
-    await page.screenshot({ path: path.join(outDir, String(fi).padStart(5, '0') + '.jpg'), type: 'jpeg', quality: 92 });
+    const tmp = fname(fi) + '.part.jpg';
+    await page.screenshot({ path: tmp, type: 'jpeg', quality: 92 });
+    fs.renameSync(tmp, fname(fi));
     if (i % 100 === 0) console.log(`   3d ${i}/${frames.length} (${((Date.now() - t0) / 1000).toFixed(0)}s)`);
+    if (maxS && (Date.now() - t0) / 1000 > maxS) { console.log(`   3d PARCIAL: parei no limite de tempo; rode de novo para continuar`); break; }
   }
   if (capaArg) {
     await page.evaluate(() => window.renderFrame(0, 'capa'));
     await page.screenshot({ path: path.join(outDir, 'capa.jpg'), type: 'jpeg', quality: 92 });
   }
-  console.log(`   3d pronto: ${frames.length} quadros em ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+  console.log(`   3d fim da rodada:  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   await browser.close(); server.close();
 })().catch(e => { console.error(e); process.exit(1); });
