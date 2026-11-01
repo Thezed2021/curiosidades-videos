@@ -26,6 +26,12 @@ TTS_ROOT=$HOME/tts OUT=video.mp4 python3 video.py                        # rende
 ```
 O render já verifica (ffprobe, volumedetect) e grava check/final_contact.png — olhe.
 
+### Histórias (série da noite)
+`from story import *` traz personagens (`person`, com humor e pose), cenários (`cidade`,
+`quarto`, `escritorio`, `ceu`), efeitos (`chuva`, `flash`) e telas (`ep_card`, `continua`).
+Veja `kit/exemplos/personagens_demo.py`. Vozes por fala: campo `voice` no SEG
+(`pm_santa` narrador, `pm_alex` homem, `pf_dora` mulher). Regras das séries: `series/README.md`.
+
 ## 3. Publicar
 O mp4 vai para a branch `videos` (órfã, sobrescrita a cada dia com force-push, para o
 repositório não crescer). Link público usado no Metricool:

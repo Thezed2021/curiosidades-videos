@@ -14,6 +14,8 @@ Um vídeo é um script curto que define SEGS e as funções de cena e chama run(
     run(SEGS, globals(), out="video.mp4")
 
 - cap = legenda (pode ter dígitos); say = fala (números por extenso).
+- voice (opcional) = "pm_santa" (narrador, padrão), "pm_alex" (homem) ou "pf_dora" (mulher);
+  speed (opcional, padrão 1.0). Útil para falas de personagens nas histórias.
 - Segmentos consecutivos com a mesma scene formam UMA cena (sem transição).
 - c.mark(i) = instante (s, relativo à cena) em que começa a fala do i-ésimo
   segmento daquela cena -> use para revelar elementos no momento certo.
@@ -248,20 +250,24 @@ class Ctx:
 
 
 # ------------------------------------------------------------------ voz
-def _tts():
+def _tts(voice="pm_santa"):
     sys.path.insert(0, HERE)
     from neural_tts import TTS
-    return TTS()
+    return TTS(voice=voice)
 
 def build_voice(segs, cache_dir="voz"):
     """Gera um wav 24 kHz por segmento (com cache por texto). Retorna durações."""
     os.makedirs(cache_dir, exist_ok=True)
-    tts = None; durs = []
+    engines = {}; durs = []
     for i, s in enumerate(segs):
-        h = hashlib.md5(s["say"].encode()).hexdigest()[:10]
+        voice = s.get("voice", "pm_santa")
+        key = f'{voice}|{s.get("speed", 1.0)}|{s["say"]}'
+        h = hashlib.md5(key.encode()).hexdigest()[:10]
         p = os.path.join(cache_dir, f"{i:02d}_{h}.wav")
         if not os.path.exists(p):
-            tts = tts or _tts()
+            if voice not in engines:
+                engines[voice] = _tts(voice)
+            tts = engines[voice]
             a = tts.say(s["say"], speed=s.get("speed", 1.0))
             tts.save_wav(a, p)
         with wave.open(p) as w:

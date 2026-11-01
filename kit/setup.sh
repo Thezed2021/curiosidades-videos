@@ -29,7 +29,8 @@ python3 - <<'PY'
 import numpy as np, os
 root = os.environ.get("TTS_ROOT", os.path.expanduser("~/tts"))
 v = np.load(os.path.join(root, "kokoro", "voices-v1.0.bin"))
-np.save(os.path.join(root, "kokoro", "pm_santa.npy"), v["pm_santa"])
+for name in ("pm_santa", "pm_alex", "pf_dora"):
+    np.save(os.path.join(root, "kokoro", f"{name}.npy"), v[name])
 PY
 
 python3 -c "import onnxruntime, numpy, PIL" || pip install --break-system-packages -q onnxruntime numpy pillow
