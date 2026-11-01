@@ -376,6 +376,28 @@ class Video:
         self.blocks, self.total = build_timeline(segs, durs)
         self.words, self.groups = caption_words(segs)
         self.nframes = int(math.ceil(self.total * FPS))
+        self.bg3d = ns.get("CENA3D")  # caminho do .js da cena 3D (vídeos "Você é um...")
+        self.dir3d = "frames3d"
+
+    # ---------------- 3D (three.js no Chromium)
+    def render3d(self, frames=None, capa=False):
+        tl = dict(W=W, H=H, fps=FPS, total=self.total, nframes=self.nframes,
+                  blocks=[dict(name=b[0], start=b[1], end=b[2], marks=b[3]) for b in self.blocks])
+        json.dump(tl, open("timeline.json", "w"))
+        arg = "all" if frames is None else ",".join(str(f) for f in sorted(set(frames)))
+        cmd = ["node", os.path.join(HERE, "r3d", "render3d.js"), "timeline.json", self.bg3d, self.dir3d, arg]
+        if capa:
+            cmd.append("capa")
+        r = subprocess.run(cmd)
+        if r.returncode != 0:
+            raise SystemExit("render 3D falhou (veja o erro acima)")
+
+    def _fi(self, gt):
+        return max(0, min(self.nframes - 1, int(math.floor(gt * FPS + 1e-6))))
+
+    def _img3d(self, gt):
+        p = os.path.join(self.dir3d, f"{self._fi(gt):05d}.jpg")
+        return Image.open(p).convert("RGB") if os.path.exists(p) else Image.new("RGB", (W, H), (0, 0, 0))
 
     def block_at(self, gt):
         for i, b in enumerate(self.blocks):
@@ -386,7 +408,12 @@ class Video:
     def render_scene(self, bi, gt):
         name, t0, t1, marks = self.blocks[bi]
         c = Ctx(gt - t0, t1 - t0, gt, marks, bi)
-        self.ns[name](c)
+        if self.bg3d:
+            c.img = self._img3d(gt); c.dr = ImageDraw.Draw(c.img)
+            if callable(self.ns.get(name)):  # camada 2D opcional por cima do 3D
+                self.ns[name](c)
+        else:
+            self.ns[name](c)
         return c
 
     def captions(self, c, gt):
@@ -485,7 +512,11 @@ class Video:
     def cover(self, path="capa.jpg"):
         """Capa 1080x1920: cena mais forte (CAPA_T, s) + título grande."""
         t = float(self.ns.get("CAPA_T", self.total * 0.4))
-        if "capa" in self.ns:  # desenho próprio da capa (sem textos), recomendado
+        if self.bg3d and os.path.exists(os.path.join(self.dir3d, "capa.jpg")):
+            c = Ctx(t, self.total, t, [0], 0)
+            c.img = Image.open(os.path.join(self.dir3d, "capa.jpg")).convert("RGB"); c.dr = ImageDraw.Draw(c.img)
+            self.brand(c)
+        elif "capa" in self.ns and callable(self.ns["capa"]):  # desenho próprio da capa (sem textos)
             c = Ctx(t, self.total, t, [0], 0)
             self.ns["capa"](c)
             arr = np.asarray(c.img).astype(np.float32) * _vignette()
@@ -697,6 +728,17 @@ def run(segs, ns, out="video.mp4", clima=None):
     for b in v.blocks:
         print(f"   cena {b[0]:<18} {b[1]:6.2f} -> {b[2]:6.2f}  falas em {[round(m,2) for m in b[3]]}")
     stills = os.environ.get("STILLS")
+    if v.bg3d:
+        if stills:
+            fis = []
+            for x in stills.split(","):
+                fi = min(v.nframes - 1, int(float(x) * FPS)); fis.append(fi)
+                gt = fi / FPS; bi = v.block_at(gt)
+                if bi > 0 and gt - v.blocks[bi][1] < TRANS:
+                    fis.append(v._fi(v.blocks[bi][1] - 1e-3))
+            v.render3d(fis, capa=bool(ns.get("TITULO")))
+        else:
+            v.render3d(None, capa=bool(ns.get("TITULO")))
     if stills:
         os.makedirs("stills", exist_ok=True)
         paths = []

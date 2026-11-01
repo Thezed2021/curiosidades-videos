@@ -26,7 +26,11 @@ TTS_ROOT=$HOME/tts OUT=video.mp4 python3 video.py                        # rende
 ```
 O render já verifica (ffprobe, volumedetect) e grava check/final_contact.png — olhe.
 
-### Histórias (série da noite)
+### Vídeos 3D "Você é..." (noite)
+`CENA3D = "cena3d.js"` no script ativa o 3D (three.js no Chromium, offline). Regras e
+dicas em `noite3d/README.md`; exemplo completo em `exemplos/3d_piranha/`.
+
+### Histórias (séries — pausadas)
 `from story import *` traz personagens (`person`, com humor e pose), cenários (`cidade`,
 `quarto`, `escritorio`, `ceu`), efeitos (`chuva`, `flash`) e telas (`ep_card`, `continua`).
 Veja `kit/exemplos/personagens_demo.py`. Vozes por fala: campo `voice` no SEG
