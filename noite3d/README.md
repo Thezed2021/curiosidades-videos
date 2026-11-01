@@ -44,3 +44,4 @@ e um medo enorme de tudo." Referência pronta: `kit/exemplos/3d_piranha/`.
 
 ## Temas já feitos
 - 2026-11-01 — Você é uma piranha (medrosa, cardume, troca de dentes, late) — publicado 01:31
+- 2026-11-01 — Você é uma preguiça (dorme ~9,6 h na natureza vs ~6 h a mais no cativeiro; digestão de semanas a ~1 mês; desce ~1x/semana pro banheiro e volta até 1/3 mais leve; nada ~3x mais rápido que anda, fôlego até ~40 min; algas no pelo) — floresta verde/dourada
