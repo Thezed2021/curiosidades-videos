@@ -1,7 +1,14 @@
 # Regras das plataformas (OBRIGATÓRIO em toda postagem)
 
-O canal perdeu alcance (TikTok, YouTube) e teve restrição de anúncios no Instagram.
+O canal perdeu alcance (TikTok, YouTube) e o Instagram restringiu a conta por AUTOMAÇÃO (01/11/2026).
 Estas regras existem para nos adequar às políticas de 2025–2026. Siga todas.
+
+## 0. Instagram = publicação MANUAL (decisão do usuário, 01/11/2026)
+- Cada vídeo vira TRÊS posts no mesmo horário: A = youtube (autoPublish true),
+  B = tiktok (autoPublish true), C = instagram (autoPublish FALSE).
+- Com autoPublish false a Metricool só manda notificação para o app no celular e o usuário publica
+  à mão pelo Instagram. NUNCA mude o post do Instagram para autoPublish true nem junte o Instagram
+  com outra rede no mesmo post — até o usuário dizer o contrário.
 
 ## 1. Legendas
 - 1ª linha: gancho direto com no máximo 1 emoji.
@@ -15,7 +22,7 @@ Estas regras existem para nos adequar às políticas de 2025–2026. Siga todas.
   todo dia (varie o começo e o tamanho).
 
 ## 2. Hashtags
-- Instagram + YouTube (post A): de 3 a 5 hashtags, TODAS específicas do tema
+- YouTube (post A) e Instagram (post C): de 3 a 5 hashtags, TODAS específicas do tema
   (ex.: #poraquê #peixeelétrico #amazônia). Limite do Instagram: 5. Proibidas: #fyp #foryou
   #viral #reels #explore #shorts #curiosidadesdomundo (genéricas = sinal de spam).
 - TikTok (post B): exatamente 4 hashtags, específicas do tema (mesma lista de proibidas).
